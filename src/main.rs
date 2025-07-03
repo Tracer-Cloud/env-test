@@ -38,4 +38,10 @@ fn detect_environment_type() -> String {
 fn main() {
     let env_type = detect_environment_type();
     println!("Detected environment: {}", env_type);
+
+    println!("Getting All Environments");
+
+    for (key, value) in std::env::vars() {
+        println!("{key}={value} \n");
+    }
 }

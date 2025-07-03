@@ -1,0 +1,8 @@
+{
+    "name": "env-test",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "runArgs": [],
+    "postCreateCommand": "cargo build && ./target/debug/env-test"
+}
