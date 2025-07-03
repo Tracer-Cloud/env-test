@@ -3,7 +3,7 @@ use std::fs;
 //use std::process::Command;
 
 fn detect_environment_type() -> String {
-    if env::var("CODESPACES").is_ok() || env::var("CODESPACE_NAME").is_ok() {
+    if is_codespaces() {
         return "GitHub Codespaces".into();
     }
 
@@ -35,6 +35,11 @@ fn detect_environment_type() -> String {
     "Local".into()
 }
 
+fn is_codespaces() -> bool {
+    std::env::var("CODESPACES").is_ok()
+        || std::env::var("CODESPACE_NAME").is_ok()
+        || std::env::var("HOSTNAME").map_or(false, |v| v.contains("codespaces-"))
+}
 fn main() {
     let env_type = detect_environment_type();
     println!("Detected environment: {}", env_type);
