@@ -7,4 +7,4 @@ COPY . .
 
 RUN cargo build --release
 
-CMD ["./target/release/env_test"]
+CMD ["./app/target/release/env_test"]
