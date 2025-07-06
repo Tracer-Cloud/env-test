@@ -1,6 +1,6 @@
 FROM rust:1.86-slim
 
-RUN apt update && apt install pkg-config -y
+RUN apt update  && apt install pkg-config libssl-dev -y
 WORKDIR /app
 
 COPY . .
