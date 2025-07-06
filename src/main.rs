@@ -1,8 +1,8 @@
 use std::env;
 use std::fs;
-//use std::process::Command;
+use std::path::Path;
 
-fn detect_environment_type() -> String {
+async fn detect_environment_type() -> String {
     if is_codespaces() {
         return "GitHub Codespaces".into();
     }
@@ -11,18 +11,15 @@ fn detect_environment_type() -> String {
         return "GitHub Actions".into();
     }
 
-    // won't be testing this lol
     if env::var("AWS_BATCH_JOB_ID").is_ok() {
         return "AWS Batch".into();
     }
 
-    if let Ok(uuid) = fs::read_to_string("/sys/devices/virtual/dmi/id/product_uuid") {
-        if uuid.to_lowercase().starts_with("ec2") {
-            return "AWS EC2".into();
-        }
+    if let Some(env) = detect_ec2_environment().await {
+        return env;
     }
 
-    if std::path::Path::new("/.dockerenv").exists() {
+    if Path::new("/.dockerenv").exists() {
         return "Docker".into();
     }
 
@@ -36,17 +33,37 @@ fn detect_environment_type() -> String {
 }
 
 fn is_codespaces() -> bool {
-    std::env::var("CODESPACES").is_ok()
-        || std::env::var("CODESPACE_NAME").is_ok()
-        || std::env::var("HOSTNAME").map_or(false, |v| v.contains("codespaces-"))
+    env::var("CODESPACES").is_ok()
+        || env::var("CODESPACE_NAME").is_ok()
+        || env::var("HOSTNAME").map_or(false, |v| v.contains("codespaces-"))
 }
-fn main() {
-    let env_type = detect_environment_type();
+
+async fn detect_ec2_environment() -> Option<String> {
+    // Try DMI UUID
+    if let Ok(uuid) = fs::read_to_string("/sys/devices/virtual/dmi/id/product_uuid") {
+        if uuid.to_lowercase().starts_with("ec2") {
+            return Some("AWS EC2".into());
+        }
+    }
+
+    // Fallback to metadata service
+    let url = "http://169.254.169.254/latest/meta-data/instance-id";
+    if let Ok(resp) = reqwest::get(url).await {
+        if resp.status() == 200 {
+            return Some("AWS EC2 (via metadata)".into());
+        }
+    }
+
+    None
+}
+
+#[tokio::main]
+async fn main() {
+    let env_type = detect_environment_type().await;
     println!("Detected environment: {}", env_type);
+    println!("All ENV vars:");
 
-    println!("Getting All Environments");
-
-    for (key, value) in std::env::vars() {
-        println!("{key}={value} \n");
+    for (key, value) in env::vars() {
+        println!("{key}={value}");
     }
 }
