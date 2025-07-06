@@ -45,7 +45,7 @@ async fn detect_ec2_environment() -> Option<String> {
             return Some("AWS EC2".into());
         }
     }
-
+    println!("using fallback mech");
     // Fallback to metadata service
     let url = "http://169.254.169.254/latest/meta-data/instance-id";
     if let Ok(resp) = reqwest::get(url).await {
