@@ -1,5 +1,6 @@
 FROM rust:1.86-slim
 
+RUN apt update && apt install pkg-config
 WORKDIR /app
 
 COPY . .
