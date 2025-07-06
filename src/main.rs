@@ -3,6 +3,8 @@ use std::fs;
 use std::path::Path;
 
 async fn detect_environment_type() -> String {
+    let running_in_docker = is_docker();
+
     if is_codespaces() {
         return "GitHub Codespaces".into();
     }
@@ -15,18 +17,16 @@ async fn detect_environment_type() -> String {
         return "AWS Batch".into();
     }
 
-    if let Some(env) = detect_ec2_environment().await {
-        return env;
-    }
-
-    if Path::new("/.dockerenv").exists() {
-        return "Docker".into();
-    }
-
-    if let Ok(content) = fs::read_to_string("/proc/1/cgroup") {
-        if content.contains("docker") || content.contains("containerd") {
-            return "Docker".into();
+    if let Some(_) = detect_ec2_environment().await {
+        if running_in_docker {
+            return "AWS EC2 (Docker)".into();
+        } else {
+            return "AWS EC2".into();
         }
+    }
+
+    if is_docker() {
+        return "Docker".into();
     }
 
     "Local".into()
@@ -55,6 +55,22 @@ async fn detect_ec2_environment() -> Option<String> {
     }
 
     None
+}
+
+fn is_docker() -> bool {
+    // 1. Check for /.dockerenv
+    if Path::new("/.dockerenv").exists() {
+        return true;
+    }
+
+    // 2. Inspect /proc/1/cgroup for docker or containerd references
+    if let Ok(content) = fs::read_to_string("/proc/1/cgroup") {
+        if content.contains("docker") || content.contains("containerd") {
+            return true;
+        }
+    }
+
+    false
 }
 
 #[tokio::main]
